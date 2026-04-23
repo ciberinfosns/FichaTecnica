@@ -22,11 +22,11 @@ def crear_capa_texto(datos):
 
     # --- DATOS DE LA INSTALACIÓN ---
     can.drawString(220, 695, datos.get("nombre_abonado", "")) 
-    can.drawString(160, 680, datos.get("direccion", ""))      
-    can.drawString(160, 665, datos.get("poblacion", ""))      
-    can.drawString(360, 665, datos.get("provincia", ""))      
-    can.drawString(500, 665, datos.get("cp", ""))             
-    can.drawString(160, 650, datos.get("email", ""))
+    can.drawString(160, 665, datos.get("direccion", ""))      
+    can.drawString(200, 665, datos.get("poblacion", ""))      
+    can.drawString(360, 345, datos.get("provincia", ""))      
+    can.drawString(450, 650, datos.get("cp", ""))             
+    can.drawString(220, 650, datos.get("email", ""))
     can.drawString(200, 635, datos.get("tipo", ""))         # Al lado de Tipo: (Vivienda/Negocio)
     can.drawString(160, 620, datos.get("coordenadas", ""))  # Al lado de Coordenadas:   
 
