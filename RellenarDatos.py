@@ -6,29 +6,52 @@ import io
 def crear_capa_texto(datos):
     packet = io.BytesIO()
     can = canvas.Canvas(packet, pagesize=A4)
-    can.setFont("Helvetica", 10)
+    
+    # CAMBIO AQUÍ: Usamos 'Helvetica-Bold' para que la letra sea más oscura
+    # También puedes subir el tamaño de 10 a 11 si quieres que resalte más
+    can.setFont("Helvetica-Bold", 10)
+    
+    # Para que sea EXTREMADAMENTE oscura, podemos usar un color negro puro
+    can.setFillColorRGB(0, 0, 0) 
 
-    # --- CABECERA (Lado derecho superior) ---
-    # He subido el valor X a 500 para que escriba bien a la derecha
+    # --- CABECERA ---
     can.drawString(500, 785, datos.get("cod_instalador", "")) 
     can.drawString(500, 770, datos.get("dgp", ""))            
     can.drawString(500, 755, datos.get("fecha", ""))          
-    
-    # Nº ABONADO (Está un poco más abajo)
     can.drawString(510, 725, datos.get("n_abonado", ""))      
 
     # --- DATOS DE LA INSTALACIÓN ---
-    # Ajustamos X para que no tape los títulos "Dirección:", "Población:", etc.
-    can.drawString(220, 695, datos.get("nombre_abonado", "")) # Al lado de Empresa/Nombre
-    can.drawString(160, 680, datos.get("direccion", ""))      # Al lado de Dirección
-    can.drawString(160, 665, datos.get("poblacion", ""))      # Al lado de Población
-    can.drawString(360, 665, datos.get("provincia", ""))      # Al lado de Provincia
-    can.drawString(500, 665, datos.get("cp", ""))             # Al lado de C.P.
-    can.drawString(160, 650, datos.get("email", ""))          # Al lado de E-mail
+    can.drawString(220, 695, datos.get("nombre_abonado", "")) 
+    can.drawString(160, 680, datos.get("direccion", ""))      
+    can.drawString(160, 665, datos.get("poblacion", ""))      
+    can.drawString(360, 665, datos.get("provincia", ""))      
+    can.drawString(500, 665, datos.get("cp", ""))             
+    can.drawString(160, 650, datos.get("email", ""))          
 
     # --- DATOS DE CONEXIÓN ---
     can.drawString(160, 595, datos.get("sn_panel", ""))       
     can.drawString(180, 565, datos.get("modelo_central", "")) 
+
+    # --- CONTACTOS ---
+    y_contacto = 445
+    contactos = datos.get("contactos", [])
+    for i, contacto in enumerate(contactos[:5]):
+        can.drawString(85, y_contacto - (i * 18), contacto.get("nombre", ""))
+        can.drawString(450, y_contacto - (i * 18), contacto.get("telefono", ""))
+
+    # --- ZONAS ---
+    # Columna Izquierda
+    y_zona = 318
+    zonas = datos.get("zonas", {})
+    for i in range(1, 9):
+        can.drawString(85, y_zona, zonas.get(f"Z{i}", ""))
+        y_zona -= 14.5
+
+    # Columna Derecha
+    y_zona = 318
+    for i in range(9, 17):
+        can.drawString(365, y_zona, zonas.get(f"Z{i}", ""))
+        y_zona -= 14.5
 
     can.save()
     packet.seek(0)
