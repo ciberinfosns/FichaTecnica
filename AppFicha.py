@@ -1,95 +1,149 @@
 import streamlit as st
-from pypdf import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.units import cm
 import io
 
-def crear_capa_texto(datos):
+def generar_pdf_sofisticado(datos):
     packet = io.BytesIO()
-    can = canvas.Canvas(packet, pagesize=A4)
-    can.setFont("Helvetica", 10)
+    c = canvas.Canvas(packet, pagesize=A4)
+    ancho, alto = A4
 
-    # Coordenadas ajustadas a la derecha según tus pruebas anteriores
-    # Cabecera
-    can.drawString(500, 785, datos.get("cod_instalador", "")) 
-    can.drawString(500, 770, datos.get("dgp", ""))            
-    can.drawString(500, 755, datos.get("fecha", ""))          
-    can.drawString(510, 725, datos.get("n_abonado", ""))      
+    # --- CONFIGURACI��N DE COLORES (Azul corporativo oscuro) ---
+    color_principal = colors.HexColor("#1B2631")
+    color_linea = colors.HexColor("#D5D8DC")
 
-    # Datos Instalación
-    can.drawString(220, 695, datos.get("nombre_abonado", "")) 
-    can.drawString(160, 680, datos.get("direccion", ""))      
-    can.drawString(160, 665, datos.get("poblacion", ""))      
-    can.drawString(360, 665, datos.get("provincia", ""))      
-    can.drawString(500, 665, datos.get("cp", ""))             
-    can.drawString(160, 650, datos.get("email", ""))          
+    # --- ENCABEZADO ---
+    c.setFillColor(color_principal)
+    c.rect(0, alto - 80, ancho, 80, fill=1, stroke=0) # Barra superior
+    
+    c.setFillColor(colors.white)
+    c.setFont("Helvetica-Bold", 20)
+    c.drawString(50, alto - 50, "GS CONTROL")
+    
+    c.setFont("Helvetica", 10)
+    c.drawString(50, alto - 65, "SISTEMAS DE SEGURIDAD Y CONTROL DE ACCESOS")
+    
+    c.setFont("Helvetica-Bold", 12)
+    c.drawRightString(ancho - 50, alto - 50, "FICHA TECNICA")
+    c.setFont("Helvetica", 9)
+    c.drawRightString(ancho - 50, alto - 65, f"No. Registro: {datos['n_abonado']}")
 
-    # Conexión
-    can.drawString(160, 595, datos.get("sn_panel", ""))       
-    can.drawString(180, 565, datos.get("modelo_central", "")) 
+    # --- CUERPO DEL DOCUMENTO ---
+    y_inicial = alto - 120
 
-    can.save()
+    def dibujar_seccion(titulo, y_pos):
+        c.setFillColor(color_principal)
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(50, y_pos, titulo.upper())
+        c.setStrokeColor(color_linea)
+        c.setLineWidth(1)
+        c.line(50, y_pos - 5, ancho - 50, y_pos - 5)
+        return y_pos - 25
+
+    # 1. INFORMACION GENERAL
+    y = dibujar_seccion("1. Informacion General", y_inicial)
+    c.setFillColor(colors.black)
+    c.setFont("Helvetica-Bold", 10)
+    
+    # Grid de datos
+    c.drawString(50, y, "Cod. Instalador:"); c.setFont("Helvetica", 10); c.drawString(150, y, datos['cod_instalador'])
+    c.setFont("Helvetica-Bold", 10); c.drawString(300, y, "D.G.P.:"); c.setFont("Helvetica", 10); c.drawString(360, y, datos['dgp'])
+    y -= 18
+    c.setFont("Helvetica-Bold", 10); c.drawString(50, y, "Fecha Emision:"); c.setFont("Helvetica", 10); c.drawString(150, y, datos['fecha'])
+    c.setFont("Helvetica-Bold", 10); c.drawString(300, y, "Abonado:"); c.setFont("Helvetica", 10); c.drawString(360, y, datos['n_abonado'])
+
+    # 2. LOCALIZACION Y CONTACTO
+    y = dibujar_seccion("2. Localizacion y Contacto", y - 35)
+    
+    datos_cliente = [
+        ("Titular / Empresa", datos['nombre']),
+        ("Direccion", datos['direccion']),
+        ("Poblacion", f"{datos['poblacion']} ({datos['provincia']})"),
+        ("Cod. Postal", datos['cp']),
+        ("Email", datos['email']),
+        ("Tipo Instalacion", datos['tipo']),
+        ("Coordenadas GPS", datos['coordenadas'])
+    ]
+
+    for label, valor in datos_cliente:
+        c.setFont("Helvetica-Bold", 10); c.drawString(60, y, f"{label}:")
+        c.setFont("Helvetica", 10); c.drawString(180, y, str(valor))
+        y -= 18
+
+    # 3. ESPECIFICACIONES TECNICAS
+    y = dibujar_seccion("3. Especificaciones Tecnicas de Central", y - 20)
+    
+    c.setFont("Helvetica-Bold", 10); c.drawString(60, y, "Modelo de Central:")
+    c.setFont("Helvetica", 10); c.drawString(180, y, datos['modelo'])
+    y -= 18
+    c.setFont("Helvetica-Bold", 10); c.drawString(60, y, "Numero de Serie:")
+    c.setFont("Helvetica", 10); c.drawString(180, y, datos['sn'])
+
+    # --- PIE DE P��GINA ---
+    c.setStrokeColor(color_linea)
+    c.line(50, 50, ancho - 50, 50)
+    c.setFont("Helvetica-Oblique", 8)
+    c.setFillColor(colors.gray)
+    c.drawString(50, 35, "Este documento es confidencial y para uso exclusivo de GS Control y el cliente titular.")
+    c.drawRightString(ancho - 50, 35, "Pagina 1 de 1")
+
+    c.save()
     packet.seek(0)
     return packet
 
 # --- INTERFAZ STREAMLIT ---
-st.set_page_config(page_title="Generador de Fichas GS Control", layout="wide")
-st.title("📄 Rellenar Ficha Técnica - GS Control")
+st.set_page_config(page_title="GS Control - Generador Pro", layout="centered")
 
-with st.form("formulario_pdf"):
-    col1, col2 = st.columns(2)
+st.markdown("""
+    <style>
+    .main { background-color: #F8F9F9; }
+    .stButton>button { width: 100%; background-color: #1B2631; color: white; }
+    </style>
+    """, unsafe_allow_html=True)
+
+st.title("?? Generador de Fichas Profesionales")
+st.info("Complete el formulario para generar el PDF con dise?o corporativo.")
+
+with st.form("main_form"):
+    col1, col2, col3 = st.columns(3)
+    with col1: cod = st.text_input("Cod. Instalador")
+    with col2: dgp = st.text_input("D.G.P.")
+    with col3: fecha = st.text_input("Fecha")
     
-    with col1:
-        st.subheader("Datos de Cabecera")
-        cod = st.text_input("Código Instalador")
-        dgp = st.text_input("D.G.P.")
-        fecha = st.text_input("Fecha (DD/MM/AAAA)")
-        n_abonado = st.text_input("Nº ABONADO")
+    n_abonado = st.text_input("Numero de Abonado")
+    
+    st.divider()
+    
+    nombre = st.text_input("Nombre Titular / Empresa")
+    direccion = st.text_input("Direccion")
+    
+    c_pob, c_prov, c_cp = st.columns([2, 2, 1])
+    poblacion = c_pob.text_input("Poblacion")
+    provincia = c_prov.text_input("Provincia")
+    cp = c_cp.text_input("C.P.")
+    
+    c_em, c_tp = st.columns(2)
+    email = c_em.text_input("Email")
+    tipo = c_tp.selectbox("Tipo", ["Vivienda", "Negocio", "Industrial"])
+    coordenadas = st.text_input("Coordenadas GPS")
+    
+    st.divider()
+    
+    c_sn, c_mod = st.columns(2)
+    sn = c_sn.text_input("S/N Panel ID")
+    modelo = c_mod.text_input("Modelo Central")
+    
+    boton = st.form_submit_button("GENERAR DOCUMENTO PROFESIONAL")
 
-    with col2:
-        st.subheader("Datos de Instalación")
-        nombre = st.text_input("Empresa / Nombre Abonado")
-        dir_inst = st.text_input("Dirección")
-        pob = st.text_input("Población")
-        prov = st.text_input("Provincia")
-        cp = st.text_input("C.P.")
-        mail = st.text_input("E-mail")
-
-    st.subheader("Datos de Conexión")
-    sn = st.text_input("S/N o Panel ID")
-    modelo = st.text_input("Modelo y Marca de Central")
-
-    submit = st.form_submit_button("Generar y Descargar PDF")
-
-if submit:
-    mis_datos = {
+if boton:
+    datos = {
         "cod_instalador": cod, "dgp": dgp, "fecha": fecha, "n_abonado": n_abonado,
-        "nombre_abonado": nombre, "direccion": dir_inst, "poblacion": pob,
-        "provincia": prov, "cp": cp, "email": mail, "sn_panel": sn, "modelo_central": modelo
+        "nombre": nombre, "direccion": direccion, "poblacion": poblacion,
+        "provincia": provincia, "cp": cp, "email": email, "tipo": tipo,
+        "coordenadas": coordenadas, "sn": sn, "modelo": modelo
     }
-    
-    # Procesamiento del PDF
-    reader = PdfReader("FichaTecnica.pdf")
-    writer = PdfWriter()
-    
-    capa = crear_capa_texto(mis_datos)
-    capa_pdf = PdfReader(capa)
-    
-    pagina = reader.pages[0]
-    pagina.merge_page(capa_pdf.pages[0])
-    writer.add_page(pagina)
-    
-    if len(reader.pages) > 1:
-        writer.add_page(reader.pages[1])
-        
-    # Guardar en memoria para descarga inmediata
-    output = io.BytesIO()
-    writer.write(output)
-    
-    st.success("✅ PDF generado correctamente")
-    st.download_button(
-        label="⬇️ Descargar Ficha Rellena",
-        data=output.getvalue(),
-        file_name=f"Ficha_{n_abonado}.pdf",
-        mime="application/pdf"
-    )
+    pdf = generar_pdf_sofisticado(datos)
+    st.success("Documento generado con exito.")
+    st.download_button("?? Descargar PDF Corporativo", data=pdf, file_name=f"Ficha_GS_{n_abonado}.pdf")
