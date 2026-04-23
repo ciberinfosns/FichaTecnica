@@ -26,7 +26,9 @@ def crear_capa_texto(datos):
     can.drawString(160, 665, datos.get("poblacion", ""))      
     can.drawString(360, 665, datos.get("provincia", ""))      
     can.drawString(500, 665, datos.get("cp", ""))             
-    can.drawString(160, 650, datos.get("email", ""))          
+    can.drawString(160, 650, datos.get("email", ""))
+    can.drawString(200, 635, datos.get("tipo", ""))         # Al lado de Tipo: (Vivienda/Negocio)
+    can.drawString(160, 620, datos.get("coordenadas", ""))  # Al lado de Coordenadas:   
 
     # --- DATOS DE CONEXIÓN ---
     can.drawString(160, 595, datos.get("sn_panel", ""))       
